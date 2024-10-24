@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { HashRouter, Routes, Route } from 'react-router-dom'
 import Layout from './layout'
 import {HomePage, CashPage, PaymentPage} from './pages'
 
@@ -7,7 +7,7 @@ function App() {
 
   return (
     <>
-      <BrowserRouter>
+      <HashRouter>
         <Routes>
           <Route path='/' element={ <Layout/> } >
             <Route index element={ <HomePage/> } />
@@ -15,7 +15,7 @@ function App() {
             <Route path='/payment' element={ <PaymentPage/> } />
           </Route>
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </>
   )
 }

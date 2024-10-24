@@ -1,13 +1,17 @@
 import { ChangeEvent, useEffect, useState } from 'react'
 
-import { Avatar, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, List, ListItemButton, ListItemIcon, ListItemText, Pagination, Paper } from "@mui/material";
+import { Avatar, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, List, ListItemButton, ListItemIcon, ListItemText, Pagination, Paper, Typography } from "@mui/material";
 
-import { collection, deleteDoc, doc, getDocs, Timestamp } from 'firebase/firestore'
+//import { collection, getDocs, Timestamp } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDocs, Timestamp , updateDoc } from 'firebase/firestore'
+import { getStorage, ref, deleteObject } from 'firebase/storage'
+
 import { db } from '../firebase'
 import usePaymentStore from '../store/payment-store'
+import {  VariantType, useSnackbar } from 'notistack';
 
 interface DataItem {
-    id: string;
+    id: string | undefined;
     name: string;
     photo: string;
     time: Timestamp | undefined;
@@ -19,6 +23,8 @@ interface DataItem {
 
 export const PaymentPage = () => {
 
+    const { enqueueSnackbar } = useSnackbar();
+
     const [list, setList] = useState<DataItem[]>([]);
     const [currentPage, setCurrentPage] = useState<number>(1);
     const itemsPerPage = 6; // Number of items per page
@@ -27,14 +33,30 @@ export const PaymentPage = () => {
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
 
     const currentItems = list.slice(indexOfFirstItem, indexOfLastItem);
-    const {setTotal} = usePaymentStore();
+    const {setTotal, decrement} = usePaymentStore();
     const totalPages = Math.ceil(list.length / itemsPerPage);
-    
-
-    const deleteItem = async (id: string) => {
-        await deleteDoc(doc(db, 'payment', id)); // Deleting from Firebase
-        setList(list.filter(item => item.id !== id)); // Updating state
+    function handleClickVariant (message: string, variant: VariantType)  {
+        // variant could be success, error, warning, info, or default
+        enqueueSnackbar(message, { variant });
     };
+
+    const deleteItem = async (id: string | undefined) => {
+        if (!id) {
+            handleClickVariant('Can\'t delete this doc', 'error');
+            return
+        }
+        await deleteDoc(doc(db, 'payment', id)); // Deleting from Firebase
+
+        const item = list.find((obj) => obj.id === id);
+        if (item?.photo) {
+            deleteImageFromStorage(item?.photo);
+        } 
+        handleClickVariant(`Успешно удален  ${item?.name}`, 'success');
+        setList(list.filter(item => item.id !== id)); // Updating state
+        closeModal();
+        decrement();
+    };
+
 
     useEffect(() => {
         const fetchList = async () => {
@@ -55,11 +77,26 @@ export const PaymentPage = () => {
             setList(fetchedList);
             setTotal(fetchedList.length);
         };
-
         fetchList();
+
     }, []);
     const [selectedData, setSelectedImage] = useState<DataItem | undefined>(undefined);
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+    const storage = getStorage();
+
+    async function deleteImageFromStorage(imagePath: string): Promise<void> {
+        // Create a reference to the file to delete
+        const imageRef = ref(storage, imagePath);
+        try {
+          // Delete the file
+          await deleteObject(imageRef);
+          handleClickVariant(`Image at ${imagePath} deleted successfully.`, 'success');
+        } catch (error) {
+            handleClickVariant(`Error deleting image: ${error}.`, 'error');
+          console.error("Error deleting image:", error);
+        }
+      }
+      
 
     const handlePageChage = (_: ChangeEvent<unknown>, pageNumber: number) => {
         setCurrentPage(pageNumber);
@@ -75,12 +112,28 @@ export const PaymentPage = () => {
         setIsModalOpen(false);
     };
 
-    const declineDelete = (dataDec: string | undefined): void => {
-        console.log(`Deletes selected item ${dataDec}`)
-    }
 
-    const approve = (dataDec: string| undefined): void => {
-        console.log(`Appoved selected item ${dataDec} `)
+    const approve = async (id: string| undefined) => {
+        if (!id) {
+            handleClickVariant('Can\'t update this doc', 'error');
+            return
+        }
+        const docRef = doc(db, 'payment', id);
+
+        try {
+            await updateDoc(docRef, {
+                approved: true
+            })
+            const item = list.find((obj) => obj.id === id);
+            handleClickVariant(`Подтвердили  : ${item?.name}.`, 'success');
+
+        } catch (error) {
+            handleClickVariant(`Error updating  data : ${error}.`, 'error');
+          console.error("Error updating data:", error);
+        }
+
+        console.log(`Appoved selected item ${id} `);
+        closeModal();
     }
     
     return (
@@ -102,8 +155,9 @@ export const PaymentPage = () => {
                                     <ListItemIcon>
                                         <Avatar src={item.photo} alt={item.name} sx={{ cursor: 'pointer' }} ></Avatar>
                                     </ListItemIcon>
-                                    <ListItemText primary={item.name} secondary={item.bank} />
-                                    <ListItemText primary={"Цена: " + item.price + " сом"} secondary={item.id} color='textSecondary' />
+                                    <ListItemText primary={item.name} secondary={item.bank} sx={{marginInline: '2rem'}} />
+                                    <ListItemText primary={"Цена: " + item.price + " сом"} secondary={ item?.approved ? (<Typography  color='success'> подтвержден </Typography>): (<Typography  color='warning'> не подтвержден</Typography>)   }  color='textSecondary' />
+                                    
                                 </ListItemButton>
                             ))
                         }
@@ -122,9 +176,9 @@ export const PaymentPage = () => {
                     )}
                 </DialogContent>
                 <DialogActions >
-                    <Button autoFocus onClick={closeModal}> Cancel</Button>
-                    <Button color='success' onClick={()=>approve(selectedData?.id)}> Принять </Button>
-                    <Button color='error' onClick={()=> declineDelete(selectedData?.id)} > Отказать и удалить </Button>
+                    <Button autoFocus onClick={closeModal}> Отмена </Button>
+                    {!selectedData?.approved &&  <Button color='success' onClick={()=>approve(selectedData?.id)}> Принять </Button>}
+                    {!selectedData?.approved && <Button color='error' onClick={()=> deleteItem(selectedData?.id)} > Отказать и удалить </Button>}
                 </DialogActions>
             </Dialog>
         </>
