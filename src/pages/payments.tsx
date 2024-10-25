@@ -17,6 +17,7 @@ interface DataItem {
     time: Timestamp | undefined;
     bank: string;
     price: string;
+    xid: string;
     approved: boolean;
 }
 
@@ -39,6 +40,17 @@ export const PaymentPage = () => {
         // variant could be success, error, warning, info, or default
         enqueueSnackbar(message, { variant });
     };
+
+    const parseTime = (time: Timestamp | undefined) => {
+        if  (!(time instanceof Timestamp)) {
+          return 'invalid'
+        }
+        const date = time.toDate();
+        // Format the date and time
+        const formattedDate = date.toLocaleDateString(); // e.g., "12/31/2023"
+        const formattedTime = date.toLocaleTimeString(); // e.g., "12:00:00 PM"
+        return formattedDate + ' - ' + formattedTime;
+    }
 
     const deleteItem = async (id: string | undefined) => {
         if (!id) {
@@ -71,6 +83,7 @@ export const PaymentPage = () => {
                     time: data.time,
                     bank: data.bank,
                     price: data.price,
+                    xid: data.xid,
                     approved: data.approved,
                 } as DataItem;
             });
@@ -125,6 +138,8 @@ export const PaymentPage = () => {
                 approved: true
             })
             const item = list.find((obj) => obj.id === id);
+            setList((prevList) => prevList.map((item) => 
+                item.id === id ? {...item, approved: true} : item));
             handleClickVariant(`Подтвердили  : ${item?.name}.`, 'success');
 
         } catch (error) {
@@ -174,6 +189,8 @@ export const PaymentPage = () => {
                     {(
                         <img src={selectedData?.photo} alt="Large View" style={{ maxWidth: '100%', maxHeight: '100%' }} />
                     )}
+                    <Typography color='success'> Счет - {selectedData?.xid} </Typography>
+                    <Typography color='primary'> время {parseTime(selectedData?.time)} </Typography>
                 </DialogContent>
                 <DialogActions >
                     <Button autoFocus onClick={closeModal}> Отмена </Button>

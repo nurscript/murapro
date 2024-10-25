@@ -6,6 +6,9 @@ import { ThemeSwitch } from "./ThemeSwitch";
 import { AppBar, IconButton, Toolbar, Box, Button, Badge } from "@mui/material";
 import MenuIcon from '@mui/icons-material/Menu';
 import MailIcon from '@mui/icons-material/Mail';
+
+import PaymentIcon from '@mui/icons-material/Payment';
+
 import usePaymentStore from './store/payment-store'
 const Layout = () => {
     const theme = createTheme({
@@ -46,9 +49,14 @@ const Layout = () => {
                                     <MailIcon color="action" />
                                 </Badge>
                             </IconButton>
+                            <IconButton onClick={()=> navigate('/cash')} aria-label={notificationsLabel(0)}>
+                                <Badge badgeContent={0} color="secondary" >
+                                    <PaymentIcon color="action" />
+                                </Badge>
+                            </IconButton>
 
-                            <Button color="inherit" onClick={() => navigate('/')}>Cash out</Button>
-                            <Button color="inherit" onClick={() => navigate('/cash')}>Settings</Button>
+                            <Button color="inherit" onClick={() => navigate('/')}>Home</Button>
+                            
                             <ThemeSwitch />
                         </Box>
                     </Toolbar>
