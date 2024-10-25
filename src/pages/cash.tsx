@@ -4,7 +4,6 @@ import { Avatar, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
 
 //import { collection, getDocs, Timestamp } from 'firebase/firestore'
 import { collection, deleteDoc, doc, getDocs, Timestamp , updateDoc } from 'firebase/firestore'
-import { getStorage, ref, deleteObject } from 'firebase/storage'
 
 import { db } from '../firebase'
 import usePaymentStore from '../store/payment-store'
@@ -94,10 +93,6 @@ export const CashPage = () => {
     }, []);
     const [selectedData, setSelectedImage] = useState<DataItem | undefined>(undefined);
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-    const storage = getStorage();
-
-
-      
 
     const handlePageChage = (_: ChangeEvent<unknown>, pageNumber: number) => {
         setCurrentPage(pageNumber);

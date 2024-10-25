@@ -1,7 +1,7 @@
 import { SignInPage, type AuthProvider } from '@toolpad/core/SignInPage';
 
 export const HomePage = () => {
-    const roviders = [
+    const providers : AuthProvider[] = [
         { id: 'github', name: 'GitHub' },
         { id: 'google', name: 'Google' },
         { id: 'facebook', name: 'Facebook' },
@@ -24,7 +24,7 @@ export const HomePage = () => {
         <h1> 
             Home page
         </h1>
-        <SignInPage signIn={signIn} providers={roviders}  />
+        <SignInPage signIn={signIn} providers={providers}  />
         
     </div>
 )}
