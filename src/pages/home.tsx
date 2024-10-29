@@ -2,7 +2,7 @@ import { SignInPage, type AuthProvider as ToolpadAuthProvider } from '@toolpad/c
 import { signInWithPopup } from 'firebase/auth';
 import { auth, provider } from '../firebase'
 import { useSnackbar, VariantType } from 'notistack';
-import { Button } from '@mui/material';
+import { Avatar, Box, Button, Card, Typography } from '@mui/material';
 import { useAuthStore } from '../store/auth-store';
 
 
@@ -42,16 +42,22 @@ export const HomePage = () => {
   };
 
   return (
-    <div>
-      <h1>Home Page</h1>
+    <Box sx={{display:'flex', flexDirection:'column' ,alignItems:'center', justifyContent:'center', minHeight:'70vh'}}>
+      <h1 >Home Page</h1>
       {user ? (
-        <div>
+        <Card sx={{margin:'1rem', padding:'0.5rem'}}>
           <p>Welcome, {user.displayName}!</p>
+          <p>uid: {user.uid}!</p>
+          <p>email: {user.email}!</p>
+          <p>verified: {user.emailVerified? <Typography color='success'> YEs</Typography> : <Typography color='warning'>No</Typography>}</p>
+          {user?.photoURL && (<Avatar src={user?.photoURL}> </Avatar>)}
+          {user.phoneNumber && (<p>Phone: {user.phoneNumber}</p>)}
+
           <Button onClick={logout}> Logout </Button>
-        </div>
+        </Card>
       ) : (
         <SignInPage signIn={signIn} providers={providers} />
       )}
-    </div>
+    </Box>
   )
 }
