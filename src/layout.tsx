@@ -11,7 +11,6 @@ import PaymentIcon from '@mui/icons-material/Payment';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 
 import usePaymentStore from './store/payment-store'
-import { useEffect } from "react";
 const Layout = () => {
     const theme = createTheme({
         colorSchemes: {

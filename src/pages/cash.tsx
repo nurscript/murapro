@@ -69,7 +69,7 @@ export const CashPage = () => {
 
 
     useEffect(() => {
-        const unsubscribe = onSnapshot(collection(db, 'payment'), (querySnapshot) => {
+        const unsubscribe = onSnapshot(collection(db, 'withdraw'), (querySnapshot) => {
             const fetchedList: DataItem[] = querySnapshot.docs.map(doc => {
                 const data = doc.data();
                 return {
