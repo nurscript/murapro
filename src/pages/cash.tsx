@@ -1,13 +1,13 @@
 import { ChangeEvent, useEffect, useState } from 'react'
 
-import { Avatar, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, List, ListItemButton, ListItemIcon, ListItemText, Pagination, Paper, Typography } from "@mui/material";
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, List, ListItemButton, ListItemText, Pagination, Paper, Typography } from "@mui/material";
 
 //import { collection, getDocs, Timestamp } from 'firebase/firestore'
-import { collection, deleteDoc, doc, getDocs, Timestamp , updateDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, onSnapshot, Timestamp, updateDoc } from 'firebase/firestore'
 
 import { db } from '../firebase'
 import usePaymentStore from '../store/payment-store'
-import {  VariantType, useSnackbar } from 'notistack';
+import { VariantType, useSnackbar } from 'notistack';
 
 interface DataItem {
     id: string | undefined;
@@ -33,16 +33,16 @@ export const CashPage = () => {
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
 
     const currentItems = list.slice(indexOfFirstItem, indexOfLastItem);
-    const {setTotal, decrement} = usePaymentStore();
+    const { setWithdraw } = usePaymentStore();
     const totalPages = Math.ceil(list.length / itemsPerPage);
-    function handleClickVariant (message: string, variant: VariantType)  {
+    function handleClickVariant(message: string, variant: VariantType) {
         // variant could be success, error, warning, info, or default
         enqueueSnackbar(message, { variant });
     };
 
     const parseTime = (time: Timestamp | undefined) => {
-        if  (!(time instanceof Timestamp)) {
-          return 'invalid'
+        if (!(time instanceof Timestamp)) {
+            return 'invalid'
         }
         const date = time.toDate();
         // Format the date and time
@@ -51,7 +51,7 @@ export const CashPage = () => {
         return formattedDate + ' - ' + formattedTime;
     }
 
-      
+
     const deleteItem = async (id: string | undefined) => {
         if (!id) {
             handleClickVariant('Can\'t delete this doc', 'error');
@@ -64,16 +64,14 @@ export const CashPage = () => {
         handleClickVariant(`Успешно удален  ${item?.name}`, 'success');
         setList(list.filter(item => item.id !== id)); // Updating state
         closeModal();
-        decrement();
+        // decrement();
     };
 
 
     useEffect(() => {
-        const fetchList = async () => {
-            const querySnapshot = await getDocs(collection(db, 'withdraw'));
+        const unsubscribe = onSnapshot(collection(db, 'payment'), (querySnapshot) => {
             const fetchedList: DataItem[] = querySnapshot.docs.map(doc => {
                 const data = doc.data();
-                // Make sure to structure the data according to DataItem interface
                 return {
                     id: doc.id,
                     name: data.name,
@@ -86,11 +84,13 @@ export const CashPage = () => {
                 } as DataItem;
             });
             setList(fetchedList);
-            setTotal(fetchedList.length);
-        };
-        fetchList();
+            setWithdraw(fetchedList.length);
+        });
 
+        // Cleanup subscription on component unmount
+        return () => unsubscribe();
     }, []);
+
     const [selectedData, setSelectedImage] = useState<DataItem | undefined>(undefined);
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
@@ -109,7 +109,7 @@ export const CashPage = () => {
     };
 
 
-    const approve = async (id: string| undefined) => {
+    const approve = async (id: string | undefined) => {
         if (!id) {
             handleClickVariant('Can\'t update this doc', 'error');
             return
@@ -121,19 +121,19 @@ export const CashPage = () => {
                 approved: true
             })
             const item = list.find((obj) => obj.id === id);
-            setList((prevList) => prevList.map((item) => 
-                item.id === id ? {...item, approved: true} : item));
+            setList((prevList) => prevList.map((item) =>
+                item.id === id ? { ...item, approved: true } : item));
             handleClickVariant(`Подтвердили  : ${item?.name}.`, 'success');
 
         } catch (error) {
             handleClickVariant(`Error updating  data : ${error}.`, 'error');
-          console.error("Error updating data:", error);
+            console.error("Error updating data:", error);
         }
 
         console.log(`Appoved selected item ${id} `);
         closeModal();
     }
-    
+
     return (
         <>
             <h1>Заявки на вывод</h1>
@@ -144,40 +144,34 @@ export const CashPage = () => {
 
             }}>
 
-                <Paper >
+                <Paper sx={{ padding: '1rem' }} >
                     <List dense component="div" role="list" >
-
                         {
-                            currentItems.map((item) => (
-                                <ListItemButton key={item.id} role="listitem" onClick={() => openModal(item)}>
-                                    <ListItemIcon>
-                                        <Avatar src={item.photo} alt={item.name} sx={{ cursor: 'pointer' }} ></Avatar>
-                                    </ListItemIcon>
+                            currentItems.length === 0 ? (<Typography>Пока ничего нет</Typography>) :
+                                currentItems.map((item) => (
+                                    <ListItemButton key={item.id} role="listitem" onClick={() => openModal(item)}>
+                                        <ListItemText primary={item.name} secondary={item.bank} sx={{ marginInline: '2rem' }} />
+                                        <ListItemText primary={"Цена: " + item.price + " сом"} secondary={item?.approved ? (<Typography color='success'> подтвержден </Typography>) : (<Typography color='warning'> не подтвержден</Typography>)} color='textSecondary' />
+                                    </ListItemButton>
+                                ))
 
-                                    <ListItemText primary={item.name} secondary={item.bank} sx={{marginInline: '2rem'}} />
-                                    <ListItemText primary={item.xid} secondary={parseTime(item.time)} sx={{marginInline: '2rem'}} />
-                                    <ListItemText primary={"Цена: " + item.price + " сом"} secondary={ item?.approved ? (<Typography  color='success'> подтвержден </Typography>): (<Typography  color='warning'> не подтвержден</Typography>)   }  color='textSecondary' />
-                                    
-                                </ListItemButton>
-                            ))
                         }
-                        
                     </List>
                 </Paper>
 
             </Box>
-            <Pagination sx={{ display:'flex', justifyContent:'center', marginTop: '1rem' }} count={totalPages} onChange={handlePageChage} color='primary' size='large' />
+            <Pagination sx={{ display: 'flex', justifyContent: 'center', marginTop: '1rem' }} count={totalPages} onChange={handlePageChage} color='primary' size='large' />
 
             <Dialog open={isModalOpen} onClose={closeModal}>
                 <DialogTitle>Details / Action</DialogTitle>
                 <DialogContent>
-                        <Typography color='success'> Счет - {selectedData?.xid} </Typography>
-                        <Typography color='primary'> время {parseTime(selectedData?.time)} </Typography>
+                    <Typography color='success'> Счет - {selectedData?.xid} </Typography>
+                    <Typography color='primary'> время {parseTime(selectedData?.time)} </Typography>
                 </DialogContent>
                 <DialogActions >
                     <Button autoFocus onClick={closeModal}> Отмена </Button>
-                    {!selectedData?.approved &&  <Button color='success' onClick={()=>approve(selectedData?.id)}> Принять </Button>}
-                    {!selectedData?.approved && <Button color='error' onClick={()=> deleteItem(selectedData?.id)} > Отказать и удалить </Button>}
+                    {!selectedData?.approved && <Button color='success' onClick={() => approve(selectedData?.id)}> Принять </Button>}
+                    {!selectedData?.approved && <Button color='error' onClick={() => deleteItem(selectedData?.id)} > Отказать и удалить </Button>}
                 </DialogActions>
             </Dialog>
         </>

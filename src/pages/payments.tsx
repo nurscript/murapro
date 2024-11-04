@@ -3,7 +3,7 @@ import { ChangeEvent, useEffect, useState } from 'react'
 import { Avatar, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, List, ListItemButton, ListItemIcon, ListItemText, Pagination, Paper, Typography } from "@mui/material";
 
 //import { collection, getDocs, Timestamp } from 'firebase/firestore'
-import { collection, deleteDoc, doc, getDocs, Timestamp , updateDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, onSnapshot, Timestamp , updateDoc } from 'firebase/firestore'
 import { getStorage, ref, deleteObject } from 'firebase/storage'
 
 import { db } from '../firebase'
@@ -34,7 +34,7 @@ export const PaymentPage = () => {
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
 
     const currentItems = list.slice(indexOfFirstItem, indexOfLastItem);
-    const {setTotal, decrement} = usePaymentStore();
+    const {setPayment} = usePaymentStore();
     const totalPages = Math.ceil(list.length / itemsPerPage);
     function handleClickVariant (message: string, variant: VariantType)  {
         // variant could be success, error, warning, info, or default
@@ -66,16 +66,14 @@ export const PaymentPage = () => {
         handleClickVariant(`Успешно удален  ${item?.name}`, 'success');
         setList(list.filter(item => item.id !== id)); // Updating state
         closeModal();
-        decrement();
+        // decrement();
     };
 
 
     useEffect(() => {
-        const fetchList = async () => {
-            const querySnapshot = await getDocs(collection(db, 'payment'));
+        const unsubscribe = onSnapshot(collection(db, 'payment'), (querySnapshot) => {
             const fetchedList: DataItem[] = querySnapshot.docs.map(doc => {
                 const data = doc.data();
-                // Make sure to structure the data according to DataItem interface
                 return {
                     id: doc.id,
                     name: data.name,
@@ -88,11 +86,13 @@ export const PaymentPage = () => {
                 } as DataItem;
             });
             setList(fetchedList);
-            setTotal(fetchedList.length);
-        };
-        fetchList();
+            setPayment(fetchedList.length);
+        });
 
+        // Cleanup subscription on component unmount
+        return () => unsubscribe();
     }, []);
+
     const [selectedData, setSelectedImage] = useState<DataItem | undefined>(undefined);
     const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
     const storage = getStorage();
@@ -161,10 +161,11 @@ export const PaymentPage = () => {
 
             }}>
 
-                <Paper >
+                <Paper sx={{padding:'1rem'}} >
                     <List dense component="div" role="list" >
 
                         {
+                            currentItems.length === 0 ? (<Typography>Пока ничего нет</Typography>) : 
                             currentItems.map((item) => (
                                 <ListItemButton key={item.id} role="listitem" onClick={() => openModal(item)}>
                                     <ListItemIcon>

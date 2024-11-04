@@ -43,17 +43,17 @@ export const HomePage = () => {
 
   return (
     <Box sx={{display:'flex', flexDirection:'column' ,alignItems:'center', justifyContent:'center', minHeight:'70vh'}}>
-      <h1 >Home Page</h1>
+      <h1 >ПРОФИЛЬ</h1>
       {user ? (
         <Card sx={{margin:'1rem', padding:'0.5rem'}}>
-          <p>Welcome, {user.displayName}!</p>
-          <p>uid: {user.uid}!</p>
-          <p>email: {user.email}!</p>
-          <p>verified: {user.emailVerified? <Typography color='success'> YEs</Typography> : <Typography color='warning'>No</Typography>}</p>
+          <Typography>Здравствуй {user.displayName}!</Typography>
+          <Typography>uid: {user.uid}</Typography>
+          <Typography>мыло: {user.email}!</Typography>
+          <Typography>подтвержден: {user.emailVerified? <Typography component={'span'} variant={'body2'} color='success'> Да</Typography> : <Typography color='warning'>Нет</Typography>}</Typography>
           {user?.photoURL && (<Avatar src={user?.photoURL}> </Avatar>)}
-          {user.phoneNumber && (<p>Phone: {user.phoneNumber}</p>)}
+          {user.phoneNumber && (<Typography>Телефон: {user.phoneNumber}</Typography>)}
 
-          <Button onClick={logout}> Logout </Button>
+          <Button onClick={logout}> Выйти из аккаунта </Button>
         </Card>
       ) : (
         <SignInPage signIn={signIn} providers={providers} />

@@ -1,17 +1,19 @@
 import { create } from "zustand"
 
 type Payment = {
-    total : number
+    totalPayment : number
+    totalWithdraw : number
 }
 type Actions = {
-    setTotal : (n: number) => void
-    decrement : () => void
+    setPayment : (n: number) => void
+    setWithdraw : (n: number) => void
 }
 
 const usePaymentStore = create<Payment & Actions>((set)=> ({
-    total : 0,
-    setTotal: (n)=> set(()=>({ total: n})),
-    decrement: ()=> set((state)=>({total: state.total - 1 }))
+    totalPayment : 0,
+    totalWithdraw : 0,
+    setPayment: (n)=> set(()=>({ totalPayment: n})),
+    setWithdraw: (n)=> set(()=>({ totalWithdraw: n})),
 }))
 
 export default usePaymentStore;

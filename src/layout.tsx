@@ -1,23 +1,27 @@
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeSwitch } from "./ThemeSwitch";
-import { AppBar, IconButton, Toolbar, Box, Button, Badge } from "@mui/material";
+import { AppBar, IconButton, Toolbar, Box, Badge } from "@mui/material";
 import MenuIcon from '@mui/icons-material/Menu';
-import MailIcon from '@mui/icons-material/Mail';
+import MailOutlineOutlinedIcon from '@mui/icons-material/MailOutlineOutlined';
 
 import PaymentIcon from '@mui/icons-material/Payment';
+import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 
 import usePaymentStore from './store/payment-store'
+import { useEffect } from "react";
 const Layout = () => {
     const theme = createTheme({
         colorSchemes: {
             dark: true,
-            light: true,
         },
     });
-    const {total} = usePaymentStore();
+    const location = useLocation();
+    const isActive = (path: string) => location.pathname === path;
+
+    const {totalPayment, totalWithdraw} = usePaymentStore();
     const navigate = useNavigate();
     function notificationsLabel(count: number) {
         if (count === 0) {
@@ -28,7 +32,7 @@ const Layout = () => {
         }
         return `${count} notifications`;
     }
-
+    
     return (
         <>
             <ThemeProvider theme={theme} >
@@ -44,19 +48,25 @@ const Layout = () => {
                             <MenuIcon />
                         </IconButton>
                         <Box>
-                            <IconButton onClick={()=> navigate('/payment')} aria-label={notificationsLabel(total)}>
-                                <Badge badgeContent={total} color="secondary" >
-                                    <MailIcon color="action" />
+                            <IconButton
+                             onClick={()=> navigate('/payment')} aria-label={notificationsLabel(totalPayment)}>
+                                <Badge badgeContent={totalPayment} color="secondary" >
+                                    <MailOutlineOutlinedIcon color={isActive('/payment') ? 'secondary' : 'action'} />
                                 </Badge>
                             </IconButton>
-                            <IconButton onClick={()=> navigate('/cash')} aria-label={notificationsLabel(0)}>
-                                <Badge badgeContent={0} color="secondary" >
-                                    <PaymentIcon color="action" />
+                            <IconButton onClick={()=> navigate('/cash')} aria-label={notificationsLabel(totalWithdraw)}
+                                >
+                                <Badge badgeContent={totalWithdraw} color="secondary" >
+                                    <PaymentIcon color={isActive('/cash') ? 'secondary' : 'action'}/>
+                                </Badge>
+                            </IconButton>
+                            <IconButton onClick={()=> navigate('/')} aria-label={notificationsLabel(0)}
+                                color={isActive('/') ? 'secondary' : 'inherit'} >
+                                <Badge  color="secondary" >
+                                    <HomeOutlinedIcon color={isActive('/') ? 'secondary' : 'action'}/>
                                 </Badge>
                             </IconButton>
 
-                            <Button color="inherit" onClick={() => navigate('/')}>Home</Button>
-                            
                             <ThemeSwitch />
                         </Box>
                     </Toolbar>
